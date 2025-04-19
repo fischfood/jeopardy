@@ -1,0 +1,284 @@
+$score_height: 150px;
+$board_height: calc( 100vh - $score_height );
+
+$cell_width: calc( 100vw / 6 );
+$cell_height: calc( $board_height / 6 );
+
+@function cellY( $i ) {
+    @return calc( $board_height / 6 * $i );
+}
+
+@function cellX( $i ) {
+    @return calc( 100vw / 6 * $i );
+}
+
+@keyframes blink {
+    to {
+      visibility: hidden;
+    }
+  }
+
+@mixin position( $top: 0, $right: $top, $bottom: $top, $left: $right ) {
+    position: absolute;
+    top: $top;
+    right: $right;
+    bottom: $bottom;
+    left: $left;
+}
+
+$cat_font: 'Comic Sans MS'; //'jBebas';
+$prompt_font: 'jKorinna';
+
+@font-face {
+    font-family: $cat_font;
+    src: url('../fonts/bebasneue-regular-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: $prompt_font;
+    src: url('../fonts/itc_korinna_lt_bold-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #333;
+    background-color: #f0f0f0;
+    font-family: $cat_font, Arial, serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.hidden {
+    display: none;
+}
+
+.board-container {
+    background: url('../images/jeopardy-bg.jpg') no-repeat center center;
+    background-size: cover;
+}
+
+.game-row {
+    display: flex;
+}
+
+.game-cell {
+    width: $cell_width;
+    height: $cell_height;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #010D8A; //#0000bb;
+    color: #D7925E; //#ffffff;
+    outline: 4px solid #000;
+    text-shadow: 4px 4px 8px black;
+    font-size: 44px;
+    font-size: clamp(2rem, 3.33vw, 4rem); // 32-64 @ 1920px
+    letter-spacing: 1px;
+    outline-offset: -2px;
+
+    &.invisible {
+        background-color: transparent;
+        color: transparent;
+        text-shadow: none;
+    }
+
+    &.highlight {
+        background-color: #0000ff;
+    }
+
+    &.category-cell {
+        color: white;
+        background: url('../images/jeopardy-bg.jpg') no-repeat center center;
+        background-size: cover;
+        position: relative;
+
+        .round-cat-name {
+            background: darkblue;
+            outline-offset: -2px;
+            outline: 4px solid #000;
+            @include position();
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: clamp(2.25rem, 2.5vw, 3rem); // 36-48 @ 1920px
+            line-height: 1;
+            padding: .5rem 2rem;
+
+            &.visible {
+                opacity: 1;
+            }       
+        }
+    }
+}
+
+#scoreboard {
+    display: flex;
+    background-color: #f0f0f0;
+
+    .player-score {
+        height: $score_height;
+        flex: 1 1 25%;
+        display: flex;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+        background: #888866;
+
+        &.active {
+            opacity: .9;
+        }
+    }
+
+    .ps-logging {
+        box-sizing: border-box;
+        background: black;
+        color: lime;
+        padding: 1rem;
+        font-family: monospace;
+        line-height: 1.4;
+        text-align: left;
+        font-weight: normal;
+        font-size: .875rem;
+        align-items: flex-start;
+        justify-content: flex-start;
+        overflow: scroll;
+        position: relative;
+        flex-direction: column;
+
+        #logPhase {
+            position: relative;
+            color: #00bbff;
+        }
+
+        #logJS {
+            padding-top: 1rem;
+            position: relative;
+
+            &:before {
+                content: "█";
+                display: block;
+                animation: blink 1s steps(5, start) infinite;
+                width: 100%;
+                position: absolute;
+                left: 0;
+                top: -.25rem;
+            }
+        }
+    }
+    
+}
+
+.category-slider {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 600vw;
+    height: 0;
+    display: flex;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity .5s ease-in-out, left .5s ease-in-out;
+
+    &.visible {
+        height: $board_height;
+        opacity: 1;
+    }
+
+    .category-full {
+        height: $board_height;
+        width: 100vw;
+        background: url('../images/jeopardy-bg.jpg') no-repeat center center;
+        background-size: cover;
+        
+        > div {
+            width: 100vw;
+            height: $board_height;
+            display: flex;
+            background: darkblue;
+            color: white;
+            text-shadow: 0px 3px 8px rgba(0,0,0,.5);
+            font-size: clamp(6rem, 7.5vw, 9rem); // 96-144 @ 1920px
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            opacity: 0;
+            transition: opacity .5s;
+            letter-spacing: 2px;
+
+            &.visible {
+                opacity: 1;
+            }
+        }
+    }
+}
+
+[data-phase="roundRunning"] {
+    .board-container .game-cell {
+        cursor: pointer;
+    }
+}
+
+.prompt-cell {
+    width: $cell_width;
+    height: $cell_height;
+    font-family: $prompt_font, Helvetica, Arial, sans-serif;
+    padding: 0;
+    margin: 0;
+    top: 0;
+    left: 0;
+    position: absolute;
+    background: darkblue;
+    color: white;
+    z-index: -1;
+    transition: top 5.2s .1s, left 5.2s .1s, height 5.2s .1s, width 5.2s .1s; 
+
+    @for $i from 0 to 6 {
+        &.col-#{$i} {
+            left: cellX($i);
+        }
+        &.row-#{$i} {
+            top: cellY($i);
+        }
+    }
+
+    > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        scale: calc( 1/6 );
+        transition: scale 5.2s .1s;
+        height: 100%;
+        width: 100%;
+        line-height: 1.1;
+        text-align: center;
+        padding: 4% 10%;
+        box-sizing: border-box;
+        font-size: clamp(5rem, 4.22vw, 3.375rem);
+        text-transform: uppercase;
+        text-shadow: 4px 4px 8px black;
+        letter-spacing: 1px;
+    }
+
+    &.active {
+        z-index: 1;
+        top: 0;
+        left: 0;
+        height: $board_height;
+        width: 100vw;
+
+        > div {
+            scale: 1;
+        }
+    }
+}
