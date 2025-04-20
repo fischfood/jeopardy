@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lastCategory: null
     };
     
+    const container = document.getElementById('jeopardy-container');
     const grid = document.getElementById("game-grid");
     const scoreboard = document.getElementById("scoreboard");
 
@@ -93,46 +94,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // If escape is pressed, clear question and category
         if (event.code === "Escape") {
-            gameState.selectedCategory = null;
-            gameState.selectedQuestion = null;
-            clearHighlights();
-        }
-
-        if (["Keypad1"].includes(event.code)) {
-            const playerDiv = document.getElementById(`player1`);
-            playerDiv.classList.add("active");
-            setTimeout(() => {
-                playerDiv.classList.remove("active");
-            }, 100);
-        }
-
-        if (["Keypad5"].includes(event.code)) {
-            const playerDiv = document.getElementById(`player2`);
-            playerDiv.classList.add("active");
-            setTimeout(() => {
-                playerDiv.classList.remove("active");
-            }, 100);
-        }
-
-        if (["open_bracket"].includes(event.code)) {
-            const playerDiv = document.getElementById(`player3`);
-            playerDiv.classList.add("active");
-            setTimeout(() => {
-                playerDiv.classList.remove("active");
-            }, 100);
-        }
-
-        if ( gameState.selectedQuestion ) {
-            if (["KeyI", "KeyO", "KeyP"].includes(event.code)) {
-                handleBuzzIn(event.code);
-            } else if (event.code === "Slash") {
-                handleCorrectAnswer();
-            } else if (event.code === "KeyX") {
-                handleWrongAnswer();
-            } else if (event.code === "Period") {
-                skipQuestion();
+            if ( gameState.boardPhase === "roundRunning" ) {
+                gameState.selectedCategory = null;
+                gameState.selectedQuestion = null;
+                clearHighlights();
+            }
+            if ( gameState.boardPhase === "readingQuestion" ) {
+                let cellId = gameState.selectedQuestion;
+                console.log( cellId );
+                document.getElementById('P' + cellId ).classList.remove("active");
+                gameState.selectedCategory = null;
+                gameState.selectedQuestion = null;
+                clearHighlights();
+                setPhase( "roundRunning" );
             }
         }
+
+        // if (["Keypad1"].includes(event.code)) {
+        //     const playerDiv = document.getElementById(`player1`);
+        //     playerDiv.classList.add("active");
+        //     setTimeout(() => {
+        //         playerDiv.classList.remove("active");
+        //     }, 100);
+        // }
+
+        // if ( gameState.selectedQuestion ) {
+        //     if (["KeyI", "KeyO", "KeyP"].includes(event.code)) {
+        //         handleBuzzIn(event.code);
+        //     } else if (event.code === "Slash") {
+        //         handleCorrectAnswer();
+        //     } else if (event.code === "KeyX") {
+        //         handleWrongAnswer();
+        //     } else if (event.code === "Period") {
+        //         skipQuestion();
+        //     }
+        // }
     });
     
     // Spacebar triggers everything 
@@ -143,8 +139,10 @@ document.addEventListener("DOMContentLoaded", () => {
             displayCategories();
         } else if (gameState.boardPhase === 'slideCategories') {
             slideNextCategories();
-        } else if (gameState.selectedQuestion) {
+        } else if ( gameState.boardPhase === 'roundRunning' && gameState.selectedQuestion ) {
             displayQuestion(gameState.selectedQuestion);
+        } else if ( gameState.boardPhase === 'readingQuestion' ) {
+            allowAnswer();
         }
     }
 
@@ -266,6 +264,14 @@ document.addEventListener("DOMContentLoaded", () => {
             let thisQ = document.getElementById('P' + cellId )
             thisQ.classList.add('active');
             setPhase( "readingQuestion" );
+            jLog("Showing question, showing lights");
+            container.classList.add('show-lights');
         }
+    }
+
+    function allowAnswer() {
+        setPhase( "allowAnswer" );
+        jLog( "Awaiting answer from players" );
+        container.classList.add('trigger-lights');
     }
 });
