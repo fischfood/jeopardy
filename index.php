@@ -31,7 +31,7 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
                         <div class="game-cell category-cell">
                             <?php foreach( $data as $round => $dataRound ): ?>
                                 <?php if ( is_numeric( $round ) ): ?>
-                                    <div class="round-cat-name round-cat-<?php echo $round; ?>">
+                                    <div id="cat-<?php echo $categories[$i] . $round; ?>" class="round-cat-name round-cat-<?php echo $round; ?>">
                                         <?php echo $dataRound['cats'][$i]; ?>
                                     </div>
                                 <?php endif; ?>

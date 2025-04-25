@@ -140,7 +140,11 @@ html, body {
 
             &.visible {
                 opacity: 1;
-            }       
+            }
+            
+            &.category-complete {
+                font-size: 0;
+            }
         }
     }
 }

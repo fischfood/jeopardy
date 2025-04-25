@@ -168,6 +168,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 container.classList.remove('answer-lights');
                 setPhase('allowAnswer');
             }
+
+            // Wrong Answer
+            if ( event.code === "KeyT" ) {
+                jLog( `${player} timed out.`);
+                document.getElementById("times-up").play();
+                giveScore( player, thisQ, -1);
+                disablePlayer( player );
+                container.classList.remove('answer-lights');
+                setPhase('allowAnswer');
+            }
+
         // Or no one answers
         } else if ( gameState.boardPhase === "allowAnswer" && event.code === "KeyX" ) {
             let thisQ = gameState.selectedQuestion;
@@ -384,6 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Also reset answering since this only runs on end of question
         players.forEach((playerID) => {
             let player = document.getElementById(playerID);
+            player.classList.remove('answering');
             player.classList.remove('disabled');
         });
     }
@@ -401,12 +413,37 @@ document.addEventListener("DOMContentLoaded", () => {
         thisPrompt.classList.remove('active');
         thisQ.classList.add('answered');
 
+        checkCategoryCompletion( cellId.charAt(0) );
+
         setPhase( 'roundRunning' );
         jLog( `${30 - gameState.answeredQuestions.length} questions remain` );
 
         // @TODO: If 30 questions answered, end of round
 
         // @TODO: If 15 questions answered, go to commercial
+    }
+
+    function checkCategoryCompletion(column) {
+        let answered = 0;
+    
+        for (let row = 1; row <= 5; row++) {
+            const id = column + row + gameState.round;
+            if (gameState.answeredQuestions.includes(id)) {
+                answered++;
+            }
+        }
+
+        jLog( answered );
+    
+        if (answered === 5) {
+            jLog('on fifth');
+            const catLabel = document.getElementById(`cat-${column}${gameState.round}`);
+            jLog( catLabel );
+            if (catLabel) {
+                catLabel.classList.add('category-complete');
+                jLog(`Category ${column} completed`);
+            }
+        }
     }
 
     function giveScore( player, thisQ, val = 1 ) {
