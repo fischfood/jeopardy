@@ -1,4 +1,4 @@
-$score_height: 150px;
+$score_height: 120px;
 $board_height: calc( 100vh - $score_height );
 
 $questionDisplay: .875s;
@@ -16,10 +16,26 @@ $cell_height: calc( $board_height / 6 );
 }
 
 @keyframes blink {
-    to {
-      visibility: hidden;
-    }
-  }
+    0% {opacity: 0;}
+    50% {opacity: 1;}
+    100% {opacity: 0;}
+}
+
+@keyframes pulse {
+    0% {border-color: #bdf;}
+    20% {border-color: #444;}
+    100% {border-color: #444;}
+}
+
+@keyframes countdown {
+    // Subtract 22% each time until 0
+    0% {height: 100%;}
+    20% {height: 78%;}
+    40% {height: 56%;}
+    60% {height: 34%;}
+    80% {height: 12%;}
+    100% {height: 0%;}
+}
 
 @mixin position( $top: 0, $right: $top, $bottom: $top, $left: $right ) {
     position: absolute;
@@ -94,6 +110,10 @@ html, body {
         text-shadow: none;
     }
 
+    &.answered {
+        font-size: 0;
+    }
+
     &.highlight {
         background-color: #0000ff;
     }
@@ -129,17 +149,49 @@ html, body {
     display: flex;
     background-color: #f0f0f0;
 
-    .player-score {
+    .player-podium {
         height: $score_height;
         flex: 1 1 25%;
         display: flex;
+        flex-direction: column;
+        font-size: 2rem;
         text-align: center;
-        justify-content: center;
+        justify-content: space-evenly;
         align-items: center;
-        background: #888866;
+        background: darkblue;
+        color: white;
+
+        .player-score {
+            border-top: 9px solid #bbb;
+            width: 80%;
+        }
 
         &.active {
             opacity: .9;
+        }
+
+        &.negative {
+            .player-score {
+                color: red;
+            }
+        }
+
+        &.locked {
+            background: darkred;
+        }
+
+        &.disabled {
+            background: gray;
+        }
+
+        &.answering {
+            background: cyan;
+        }
+
+        [data-phase="roundRunning"] & {
+            &.board-control {
+                background: blue;
+            }
         }
     }
 
@@ -171,7 +223,7 @@ html, body {
             &:before {
                 content: "█";
                 display: block;
-                animation: blink 1s steps(5, start) infinite;
+                animation: blink 1s infinite step-end;
                 width: 100%;
                 position: absolute;
                 left: 0;
@@ -270,7 +322,8 @@ html, body {
         text-align: center;
         padding: 4vh 15vw;
         box-sizing: border-box;
-        font-size: clamp(5rem, 4.22vw, 3.375rem);
+        //font-size: clamp(5rem, 4.22vw, 3.375rem);
+        font-size: clamp(min(5cqw, 5cqh), 4.22vw, min(10cqw, 10cqh));
         text-transform: uppercase;
         text-shadow: 4px 4px 8px black;
         letter-spacing: 1px;
@@ -291,6 +344,7 @@ html, body {
             scale: 1;
         }
     }
+
     .prompt-answer {
         opacity: 0;
     }
@@ -327,8 +381,73 @@ html, body {
 
     .trigger-lights & {
         &:before {
-            animation: blink .25s steps(2, start) infinite;
-            border-color: lemonchiffon;
+            animation: pulse .5s infinite step-end;
+        }
+    }
+
+    .timer-lights {
+        opacity: 0;
+        height: 100%;
+        width: 100%;
+        z-index: 20;
+        position: absolute;
+        @include position();
+        overflow: hidden;
+        top: 50%;
+        transform: translateY(-50%);
+
+        .tl-container {
+            height: $board_height;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            position: relative;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        i {
+            height: .25rem;
+            width: .25rem;
+            background: #444;
+            border-radius: 1rem;
+            display: block;
+        }
+
+        &.tl-lit {
+            i {
+                background: #f88;
+                box-shadow: 0px 0px 4px 2px red;
+            }
+        }
+    }
+
+    .answer-lights & {
+        &:before {
+            opacity: 0;
+        }
+        .timer-lights {
+            opacity: 1;
+        }
+        .tl-lit {
+            animation: countdown 5s step-end;
+            animation-fill-mode: forwards;
+
+            i {
+                position: relative;
+
+                &:before {
+                    content: '✴';
+                    color: white;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    font-style: normal;
+                    opacity: .5;
+                }
+            }
         }
     }
 }

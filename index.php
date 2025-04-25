@@ -3,8 +3,9 @@
 
 $baseScore = 200;
 $categories = ['A', 'B', 'C', 'D', 'E', 'F'];
+$players = ['Player 1', 'Player 2', 'Player 3'];
 
-// include( 'data/data.php' );
+include( 'data/data.php' );
 include( 'data/data-sample.php' );
 
 $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
@@ -61,15 +62,25 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
         </div> <?php // End #game-grid ?>
 
         <div id="scoreboard">
-            <div class="player-score" id="player1">Player 1: $100</div>
-            <div class="player-score" id="player2">Player 2: $0</div>
-            <div class="player-score" id="player3">Player 3: $0</div>
+            <?php foreach( $players as $k => $player ): ?>
+                <?php $key = $k + 1; ?>
+                <div class="player-podium" id="player<?php echo $key; ?>">
+                    <div class="player-score">
+                        $<span id="player<?php echo $key; ?>-score">0</span>
+                    </div>
+                    <div class="player-name">
+                        <?php echo $player; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+            
             <?php if ( isset( $_GET['test'] ) ): ?>
-                <div class="player-score ps-logging" id="playerLogging">
+                <div class="player-podium ps-logging" id="playerLogging">
                     <span id="logPhase">start</span>
                     <span id="logJS"></span>
                 </div>
             <?php endif; ?>
+
         </div> <?php // End #scoreboard ?>
 
         <div class="category-slider-container">
@@ -110,8 +121,19 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
             <?php endif; ?>
         <?php endforeach; ?>
 
-        <div class="active-lights al-left"></div>
-        <div class="active-lights al-right"></div>
+        <?php foreach( ['left','right'] as $dir ): ?>
+            <div class="active-lights al-<?php echo $dir; ?>">
+                <?php foreach( ['off','lit'] as $lit ): ?>
+                    <div class="timer-lights tl-<?php echo $lit; ?>">
+                        <div class="tl-container">
+                            <?php for ( $i = 0; $i < 9; $i++ ): ?>
+                                <i></i>
+                            <?php endfor; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endforeach; ?>
 
     </div> <?php // End #jeopardy-container ?>
 

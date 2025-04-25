@@ -7,17 +7,22 @@ document.addEventListener("DOMContentLoaded", () => {
         selectedCategory: null,
         selectedQuestion: null,
         activePlayer: null,
-        playerScores: { 1: 0, 2: 0, 3: 0 },
+        controlPlayer: null,
+        playerScores: {
+            player1: 0,
+            player2: 0,
+            player3: 0
+        },
         answeredQuestions: [],
         lastCategory: null
     };
     
     const container = document.getElementById('jeopardy-container');
     const grid = document.getElementById("game-grid");
-    const scoreboard = document.getElementById("scoreboard");
+    const logBlock = document.getElementById("playerLogging");
 
     let transitionTime = 500;
-    let logBlock = document.getElementById("playerLogging");
+    let lockTime = 250;
     
     if ( logBlock != null ) {
         transitionTime = 5;
@@ -26,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function setPhase( phase ) {
         gameState.boardPhase = phase;
         jLog( `Phase set to: ${phase}` );
-        grid.setAttribute("data-phase", phase);
+        container.setAttribute("data-phase", phase);
         
         if ( logBlock != null ) {
             document.getElementById("logPhase").innerHTML = phase;
@@ -71,7 +76,35 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    let players = ['player1','player2','player3'];
+    let player1 = ['Numpad1', 'Numpad2', 'Numpad3', 'Numpad4'];
+    let player2 = ['Numpad5', 'Numpad6', 'Numpad7', 'Numpad8'];
+    let player3 = ['Numpad9', 'Numpad0', 'NumpadMultiply', 'NumpadSubtract'];
+
+    // Testing
+    player1 = ['Numpad9'];
+    player2 = ['Numpad0'];
+    player3 = ['NumpadMultiply'];
+
+    const keyToPlayerMap = {
+        player1,
+        player2,
+        player3
+    };
+
     document.addEventListener("keydown", (event) => {
+
+        let matchedPlayer = null;
+
+        // Allow Player Answer or Lockout90*-
+        if ( gameState.boardPhase === "readingQuestion" || gameState.boardPhase === "allowAnswer" || gameState.boardPhase === "checkingAnswer" ) {
+            for (const [player, keys] of Object.entries(keyToPlayerMap)) {
+                if (keys.includes(event.code)) {
+                    matchedPlayer = player;
+                    handleBuzzerPress( player );
+                }
+            }
+        }
 
         // Prevent all keypresses while board is transitioning
         if ( !gameState.allowKeys ) { 
@@ -83,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
             handleSpacebarPress();
         }
 
+        // Category / Question Select
         if ( gameState.boardPhase === "roundRunning" ) {
             if (["KeyA", "KeyB", "KeyC", "KeyD", "KeyE", "KeyF"].includes(event.code)) {
                 selectCategory(event.code.charAt(3));
@@ -98,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 gameState.selectedCategory = null;
                 gameState.selectedQuestion = null;
                 clearHighlights();
+                jLog('Escape: Clearing Selections');
             }
             if ( gameState.boardPhase === "readingQuestion" ) {
                 let cellId = gameState.selectedQuestion;
@@ -106,29 +141,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 gameState.selectedCategory = null;
                 gameState.selectedQuestion = null;
                 clearHighlights();
+                jLog('Escape: Backing out of question');
                 setPhase( "roundRunning" );
             }
         }
 
-        // if (["Keypad1"].includes(event.code)) {
-        //     const playerDiv = document.getElementById(`player1`);
-        //     playerDiv.classList.add("active");
-        //     setTimeout(() => {
-        //         playerDiv.classList.remove("active");
-        //     }, 100);
-        // }
+        // Answer buttons
+        if ( gameState.boardPhase === "awaitingAnswer" ) {
+            let player = gameState.activePlayer;
+            let thisQ = gameState.selectedQuestion;
 
-        // if ( gameState.selectedQuestion ) {
-        //     if (["KeyI", "KeyO", "KeyP"].includes(event.code)) {
-        //         handleBuzzIn(event.code);
-        //     } else if (event.code === "Slash") {
-        //         handleCorrectAnswer();
-        //     } else if (event.code === "KeyX") {
-        //         handleWrongAnswer();
-        //     } else if (event.code === "Period") {
-        //         skipQuestion();
-        //     }
-        // }
+            // Correct Answer
+            if ( event.code === "Slash" ) {
+                jLog( `${player} got ${thisQ} correct. Back to board`);
+                giveScore( player, thisQ );
+                finishQuestion( thisQ );
+                document.querySelector('.board-control').classList.remove('board-control');
+                setControl( player );
+            }
+
+            // Wrong Answer
+            if ( event.code === "KeyX" ) {
+                jLog( `${player} got ${thisQ} wrong. Continue`);
+                giveScore( player, thisQ, -1);
+                disablePlayer( player );
+                container.classList.remove('answer-lights');
+                setPhase('allowAnswer');
+            }
+        // Or no one answers
+        } else if ( gameState.boardPhase === "allowAnswer" && event.code === "KeyX" ) {
+            let thisQ = gameState.selectedQuestion;
+            jLog( `No one answered ${thisQ} Back to board`);
+            finishQuestion( thisQ );
+        }
     });
     
     // Spacebar triggers everything 
@@ -157,7 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const audio = document.getElementById("board-fill-2016");
         if (audio) { audio.play(); }
 
-        // let prices = [200, 400, 600, 800, 1000];
         let order = [
             ["A3", "B1", "C4", "E2", "F5"],
             ["A5", "B4", "D1", "D3", "F2"],
@@ -170,7 +214,6 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => {
                 batch.forEach(cell => {
                     document.getElementById(cell + gameState.round).classList.remove("invisible");
-                    // document.getElementById(cell + gameState.round).innerText = `$${prices[cell[1]-1] * round}`;
                 });
             }, index * transitionTime);
         });
@@ -212,6 +255,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if ( currentCatNum >= 6 ) {
             roundCats.classList.remove('visible');
             setPhase( "roundRunning" );
+            if ( gameState.activePlayer == null ) {
+                setControl( 'player1' );
+            }
             return;
         }
 
@@ -227,6 +273,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }, transitionTime * 2);
     }
 
+    function setControl( player ) {
+        gameState.activePlayer = player;
+        let activePlayer = document.getElementById( player );
+        activePlayer.classList.add('board-control');
+        jLog( `Board control set to ${player}`);
+    }
+
     function selectCategory(column) {
         clearHighlights();
         gameState.selectedCategory = column;
@@ -234,6 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function selectQuestion(row) {
+        clearHighlights();
         if (!gameState.selectedCategory) {
             gameState.selectedCategory = gameState.lastCategory;
         }
@@ -241,10 +295,10 @@ document.addEventListener("DOMContentLoaded", () => {
         let sqCellId = gameState.selectedCategory + row + gameState.round;
 
         if ( gameState.answeredQuestions.includes(sqCellId)) {
-            jLog( 'This cell has already been played' );
-        } else {
-            clearHighlights();
+            
+            jLog( `${sqCellId} has already been played` );
 
+        } else {
             gameState.selectedQuestion = sqCellId;
             document.getElementById(sqCellId).classList.add("highlight");
             jLog( "Selecting cell " + sqCellId );
@@ -273,5 +327,103 @@ document.addEventListener("DOMContentLoaded", () => {
         setPhase( "allowAnswer" );
         jLog( "Awaiting answer from players" );
         container.classList.add('trigger-lights');
+    }
+
+    function handleBuzzerPress( player ) {
+        // Lock out if too early
+        if ( gameState.boardPhase === "readingQuestion" ) {
+            lockoutPlayer( player );
+        }
+
+        // Allow buzz if not locked
+        if ( gameState.boardPhase === "allowAnswer" ) {
+            let playerPodium = document.getElementById( player );
+            if ( ! playerPodium.classList.contains('locked') && ! playerPodium.classList.contains('disabled') ) {
+                setAnsweringPlayer( player );
+                setPhase('awaitingAnswer');
+                removeLockouts();
+            }
+        }
+    }
+
+    function lockoutPlayer( player ) {
+        let $player = document.getElementById( player );
+
+        if ( ! $player.classList.contains('locked') ) {
+            $player.classList.add('locked');
+            jLog( `${player} locked for ${lockTime}ms`);
+            setTimeout(() => {
+                $player.classList.remove('locked');
+            }, lockTime );
+        }
+    }
+
+    function disablePlayer( player ) {
+        document.getElementById( player ).classList.add('disabled');
+        document.getElementById( player ).classList.remove('answering');
+        jLog( `${player} disabled from answering`);
+    }
+
+    function setAnsweringPlayer( player ) {
+        gameState.activePlayer = player;
+        jLog( `Active player set to ${player}`);
+        container.classList.add('answer-lights');
+
+        let $player = document.getElementById( player );
+        $player.classList.add('answering');
+    }
+
+    function removeLockouts() {
+        players.forEach((playerID) => {
+            let player = document.getElementById(playerID);
+            player.classList.remove('locked');
+        });
+    }
+
+    function removeDisabled() {
+        // Also reset answering since this only runs on end of question
+        players.forEach((playerID) => {
+            let player = document.getElementById(playerID);
+            player.classList.remove('disabled');
+        });
+    }
+
+    function finishQuestion( cellId ) {
+        gameState.answeredQuestions.push( cellId );
+        removeLockouts();
+        removeDisabled();
+        clearHighlights();
+        container.className = '';
+
+        let thisPrompt = document.getElementById('P' + cellId );
+        let thisQ = document.getElementById( cellId );
+
+        thisPrompt.classList.remove('active');
+        thisQ.classList.add('answered');
+
+        setPhase( 'roundRunning' );
+        jLog( `${30 - gameState.answeredQuestions.length} questions remain` );
+
+        // @TODO: If 30 questions answered, end of round
+
+        // @TODO: If 15 questions answered, go to commercial
+    }
+
+    function giveScore( player, thisQ, val = 1 ) {
+        let qData = document.getElementById(thisQ);
+        let playerPodium = document.getElementById( player );
+        let playerScore = document.getElementById( player + '-score' );
+        let score = qData.getAttribute('data-score');
+        let currentScore = gameState.playerScores[ player ];
+        let newScore = currentScore + ( score * val );
+
+        gameState.playerScores[ player ] = newScore;
+        playerScore.innerHTML = newScore;
+
+        if ( newScore < 0 ) {
+            playerPodium.classList.add('negative');
+        } else {
+            playerPodium.classList.remove('negative');
+        }
     }
 });
