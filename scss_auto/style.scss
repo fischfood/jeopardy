@@ -552,6 +552,16 @@ html, body {
         text-transform: uppercase;
         text-shadow: 4px 4px 8px black;
     }
+
+    .final-score {
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+
+        &.invisible {
+            opacity: 0;
+        }
+    }
 }
 
 [data-phase="finalCategory"] #final-cat { display: block; }
@@ -560,7 +570,7 @@ html, body {
 [data-phase="finalAnswer"] #final-cat { display: block; }
 
 [data-phase="finalScores"] {
-    
+
     #final-jeopardy {
         height: 100vh;
     }

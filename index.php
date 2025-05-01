@@ -76,7 +76,7 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
             </div>
             <div id="final-scores" class="hidden">
                 <?php foreach( $players as $place => $score ): ?>
-                    <div id="final-score-<?php echo $place + 1; ?>"></div>
+                    <div id="final-score-<?php echo $place + 1; ?>" class="final-score invisible"></div>
                 <?php endforeach; ?>
             </div>
         </div>

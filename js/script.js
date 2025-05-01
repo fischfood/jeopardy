@@ -244,16 +244,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } else if (gameState.boardPhase === 'finalScores') {
             if (gameState.revealIndex > 0) {
-                const index = gameState.revealIndex;
-                const row = document.getElementById(`final-score-${index}`);
-                if (row) {
-                    row.classList.add('visible');
+                const index = 3 - gameState.revealIndex; // 0, 1, 2
+                const { id, name, score } = gameState.finalResults[index];
+        
+                const div = document.getElementById(`final-score-${gameState.revealIndex}`); // 3 → 2 → 1
+                if (div) {
+                    div.innerText = `${name}: $${score}`;
+                    div.classList.remove('invisible');
                 }
+        
                 gameState.revealIndex--;
             } else {
-                // Game complete!
-                jLog("Game Over – Final Results Revealed");
-                // Optionally: add end screen, confetti, etc.
+                jLog("All final scores revealed.");
             }
         }
     }
@@ -673,27 +675,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function finalizeFinalScores() {
-        const results = players
-            .map(p => ({
-                id: p,
-                name: document.getElementById(`${p}-name`).innerText,
-                score: gameState.playerScores[p]
-            }))
-            .sort((a, b) => b.score - a.score); // highest to lowest
+        gameState.finalResults = players.map(p => ({
+            id: p,
+            name: document.getElementById(`${p}-name`).innerText,
+            score: gameState.playerScores[p]
+        }))
+        .sort((a, b) => a.score - b.score);
     
-        results.forEach((player, index) => {
-            const slot = document.getElementById( `final-score-${index + 1}` );
-            if (slot) {
-                slot.innerText = `${player.name}: $${player.score}`;
-            }
+        const finalScoresContainer = document.getElementById('final-scores');
+        finalScoresContainer.innerHTML = ''; // Clear previous
+    
+        gameState.finalResults.forEach((player, index) => {
+            const position = index + 1;
+            const div = document.createElement('div');
+            div.id = `final-score-${position}`;
+            div.className = 'final-score invisible';
+            div.innerText = `${player.name}: $${player.score}`;
+            finalScoresContainer.appendChild(div);
         });
     
         document.getElementById('final-answer-prompt').classList.add('hidden');
-        document.getElementById('final-scores').classList.remove('hidden');
+        finalScoresContainer.classList.remove('hidden');
     
-        gameState.finalResults = results;
-    
-        gameState.revealIndex = results.length;
+        gameState.revealIndex = 3; // Start from 3rd
         setPhase('finalScores');
+        jLog('Final scores ready');
     }
 });
