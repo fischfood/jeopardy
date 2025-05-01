@@ -68,7 +68,17 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
                     <?php echo $val; ?>
                 </div>
             <?php endforeach; ?>
-            <div id="final-scores hidden"></div>
+            <div id="final-answer-prompt" class="hidden">
+                <div id="final-player-name"></div>
+                <input type="number" id="final-wager-input" />
+                <button id="final-correct">Correct</button>
+                <button id="final-incorrect">Incorrect</button>
+            </div>
+            <div id="final-scores" class="hidden">
+                <?php foreach( $players as $place => $score ): ?>
+                    <div id="final-score-<?php echo $place + 1; ?>"></div>
+                <?php endforeach; ?>
+            </div>
         </div>
 
         <div id="scoreboard">

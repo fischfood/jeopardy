@@ -15,7 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
             player3: 0
         },
         answeredQuestions: [],
-        lastCategory: null
+        lastCategory: null,
+        finalPlayerOrder: [],
+        finalPlayerIndex: 0
     };
     
     const container = document.getElementById('jeopardy-container');
@@ -75,6 +77,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 displayQuestion(cellId);
             }
         }
+    });
+
+    // Final Jeopardy correct
+    document.getElementById("final-correct").addEventListener("click", () => {
+        finalAnswerResult(true);
+    });
+    
+    // Final Jeopardy Incorrect
+    document.getElementById("final-incorrect").addEventListener("click", () => {
+        finalAnswerResult(false);
     });
 
     let players = ['player1','player2','player3'];
@@ -225,8 +237,24 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("final-countdown").play();
         } else if ( gameState.boardPhase === 'finalCountdown' ) {
             setPhase( 'finalAnswers' );
-        } else if ( gameState.boardPhase === 'finalAnswers' ) {
-            setPhase( 'finalScores' );
+
+            gameState.finalPlayerOrder = getFinalPlayersSorted();
+            gameState.finalPlayerIndex = 0;
+            showFinalAnswerPrompt();
+
+        } else if (gameState.boardPhase === 'finalScores') {
+            if (gameState.revealIndex > 0) {
+                const index = gameState.revealIndex;
+                const row = document.getElementById(`final-score-${index}`);
+                if (row) {
+                    row.classList.add('visible');
+                }
+                gameState.revealIndex--;
+            } else {
+                // Game complete!
+                jLog("Game Over – Final Results Revealed");
+                // Optionally: add end screen, confetti, etc.
+            }
         }
     }
 
@@ -607,5 +635,65 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             playerPodium.classList.remove('negative');
         }
+    }
+
+    function getFinalPlayersSorted() {
+        return players
+            .filter(p => !document.getElementById(p).classList.contains('disabled'))
+            .sort((a, b) => gameState.playerScores[a] - gameState.playerScores[b]);
+    }
+
+    function showFinalAnswerPrompt() {
+        let player = gameState.finalPlayerOrder[ gameState.finalPlayerIndex ];
+        if ( ! player ) {
+            finalizeFinalScores();
+            return;
+        }
+    
+        document.getElementById('final-answer-prompt').classList.remove('hidden');
+        document.getElementById('final-player-name').innerText = document.getElementById(`${player}-name`).innerText;
+        document.getElementById('final-wager-input').value = '';
+    }
+
+    function finalAnswerResult( correct ) {
+        let player = gameState.finalPlayerOrder[gameState.finalPlayerIndex];
+        let wager = parseInt(document.getElementById('final-wager-input').value) || 0;
+        let scoreChange = correct ? wager : -wager;
+    
+        gameState.playerScores[player] += scoreChange;
+
+        document.getElementById(`${player}-score`).innerText = gameState.playerScores[ player ];
+
+        if ( gameState.playerScores[player] < 0 ) {
+            document.getElementById(player).classList.add('negative');
+        }
+    
+        gameState.finalPlayerIndex++;
+        showFinalAnswerPrompt();
+    }
+
+    function finalizeFinalScores() {
+        const results = players
+            .map(p => ({
+                id: p,
+                name: document.getElementById(`${p}-name`).innerText,
+                score: gameState.playerScores[p]
+            }))
+            .sort((a, b) => b.score - a.score); // highest to lowest
+    
+        results.forEach((player, index) => {
+            const slot = document.getElementById( `final-score-${index + 1}` );
+            if (slot) {
+                slot.innerText = `${player.name}: $${player.score}`;
+            }
+        });
+    
+        document.getElementById('final-answer-prompt').classList.add('hidden');
+        document.getElementById('final-scores').classList.remove('hidden');
+    
+        gameState.finalResults = results;
+    
+        gameState.revealIndex = results.length;
+        setPhase('finalScores');
     }
 });

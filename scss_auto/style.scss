@@ -530,6 +530,7 @@ html, body {
 
     &:before {
         content: '';
+        display: none;
         position: absolute;
         @include position;
         opacity: 0;
@@ -539,6 +540,7 @@ html, body {
 
     [data-phase="finalJeopardy"] & {
         &:before {
+            display: block;
             opacity: 1;
         }
     }
@@ -556,7 +558,21 @@ html, body {
 [data-phase="finalQuestion"] #final-question { display: block; }
 [data-phase="finalCountdown"] #final-question { display: block; }
 [data-phase="finalAnswer"] #final-cat { display: block; }
-[data-phase="finalScores"] #final-cat { display: block; }
+
+[data-phase="finalScores"] {
+    
+    #final-jeopardy {
+        height: 100vh;
+    }
+
+    #final-scores { 
+        display: block;
+    }
+    
+    #scoreboard {
+        display: none;
+    }
+}
 
 #jeopardy-container[data-phase*="final"] {
     #final-jeopardy {
