@@ -45,6 +45,34 @@ $cell_height: calc( $board_height / 6 );
     left: $left;
 }
 
+@mixin prompt() {
+    padding: 2rem;
+    text-align: center;
+    background: darkblue;
+    min-width: 40vw;
+    border-radius: 15px;
+    border: 2px solid black;
+    outline: 2px solid rgba(255,255,255,0.3);
+    outline-offset: -5px;
+    box-shadow: 0px 10px 22px 0px rgba(0,0,120,.7);
+}
+
+@mixin prompt-input() {
+    font-size: 3rem;
+    margin-top: 1.5rem;
+    font-family: $cat_font;
+    text-align: center;
+    width: 170px;
+    background: rgba(255,255,255,.3);
+    border: 2px solid white;
+    color: white;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        display: none;
+    }
+}
+
 $cat_font: 'jBebas';
 $prompt_font: 'jKorinna';
 
@@ -399,9 +427,7 @@ html, body {
     color: white;
 
     &-inner {
-        padding: 2rem;
-        text-align: center;
-        background: darkblue;
+        @include prompt();
     }
 
     [data-phase="dailyDouble"] & {
@@ -412,6 +438,15 @@ html, body {
     p {
         font-size: 3rem;
         margin: 0;
+
+        &.ddmm {
+            font-family: $prompt_font;
+            font-size: 1.5rem;
+        }
+    }
+
+    input {
+        @include prompt-input();
     }
 }
 
@@ -545,6 +580,20 @@ html, body {
         }
     }
 
+    [data-phase="finalCountdown"] & {
+        &:before {
+            display: block;
+        }
+    }
+
+    [data-phase="finalAnswers"] & {
+        &:before {
+            display: block;
+            opacity: 1;
+            filter: blur(40px);
+        }
+    }
+
     > div {
         font-family: $prompt_font, Helvetica, Arial, sans-serif;
         color: white;
@@ -560,6 +609,58 @@ html, body {
 
         &.invisible {
             opacity: 0;
+        }
+    }
+
+    #final-answer-prompt {
+        font-size: 1rem;
+        @include prompt();
+        position: relative;
+        z-index: 10;
+
+        #final-player-name {
+            font-size: clamp(min(5cqw, 5cqh), 4.22vw, min(10cqw, 10cqh));
+        }
+
+        input {
+            @include prompt-input();
+        }
+
+        .final-prompt-buttons {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        button {
+            font-size: 1.5rem;
+            padding: .5rem 1rem;
+            // border: none;
+            border-radius: 10px;
+            margin-top: 1.5rem;
+            font-family: $cat_font;
+            min-width: 130px;
+
+            border: 2px solid white;
+            color: white;
+            background: darkblue;
+            box-shadow: 0px 0px 9px transparent inset;
+            transition: border-color .2s, box-shadow .2s;
+            cursor: pointer;
+
+            &:hover {
+                box-shadow: 0px 0px 9px black inset
+            }
+
+            &#final-correct:hover {
+                border-color: lime;
+            }
+
+            &#final-incorrect:hover {
+                border-color: tomato;
+            }
         }
     }
 }

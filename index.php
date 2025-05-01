@@ -71,8 +71,10 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
             <div id="final-answer-prompt" class="hidden">
                 <div id="final-player-name"></div>
                 <input type="number" id="final-wager-input" />
-                <button id="final-correct">Correct</button>
-                <button id="final-incorrect">Incorrect</button>
+                <div class="final-prompt-buttons">
+                    <button id="final-correct">Correct</button>
+                    <button id="final-incorrect">Incorrect</button>
+                </div>
             </div>
             <div id="final-scores" class="hidden">
                 <?php foreach( $players as $place => $score ): ?>
@@ -178,7 +180,9 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
         <div id="daily-double-wager">
             <div id="daily-double-wager-inner">
                 <p id="dd-player">NAME</p>
-                <p id="dd-min-max">$5 - <?php echo $baseScore * 5; ?></p>
+                <p class="ddmm">
+                    Please choose a wager between <span id="dd-min-max">$5 and <?php echo $baseScore * 5; ?></span>
+                </p>
                 <input id="dd-wager" type="number" min="5" max="<?php echo $baseScore * 5; ?>" />
             </div>
         </div>
