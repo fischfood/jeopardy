@@ -45,7 +45,7 @@ $cell_height: calc( $board_height / 6 );
     left: $left;
 }
 
-$cat_font: 'Comic Sans MS'; //'jBebas';
+$cat_font: 'jBebas';
 $prompt_font: 'jKorinna';
 
 @font-face {
@@ -135,6 +135,7 @@ html, body {
             justify-content: center;
             text-align: center;
             font-size: clamp(2.25rem, 2.5vw, 3rem); // 36-48 @ 1920px
+            font-size: clamp(min(2cqw, 2cqh), 2.5vw, min(4cqw, 4cqh));
             line-height: 1;
             padding: .5rem 2rem;
 
@@ -152,6 +153,8 @@ html, body {
 #scoreboard {
     display: flex;
     background-color: #f0f0f0;
+    position: relative;
+    z-index: 10;
 
     .player-podium {
         height: $score_height;
@@ -192,7 +195,7 @@ html, body {
             background: cyan;
         }
 
-        [data-phase="roundRunning"] & {
+        [data-phase="roundRunning"] &, [data-phase="dailyDouble"] & {
             &.board-control {
                 background: blue;
             }
@@ -302,10 +305,6 @@ html, body {
     z-index: -1;
     transition: top $questionDisplay $questionDelay, left $questionDisplay $questionDelay, height $questionDisplay $questionDelay, width $questionDisplay $questionDelay; 
 
-    #prompt-round-1 & {
-        // z-index: 2;
-    }
-
     @for $i from 0 to 6 {
         &.col-#{$i} {
             left: cellX($i);
@@ -315,7 +314,7 @@ html, body {
         }
     }
 
-    > div {
+    .prompt-question {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -335,6 +334,14 @@ html, body {
         translate: -50% -50%;
         left: 50%;
         top: 50%;
+
+        &.has-image {
+            height: 100%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-size: 0;
+        }
     }
 
     &.active {
@@ -352,6 +359,60 @@ html, body {
     .prompt-answer {
         opacity: 0;
     }
+
+    &[daily-double] {
+        [data-phase="roundRunning"] &,
+        [data-phase="dailyDouble"] &  {
+            &:before {
+                content: '';
+                @include position;
+                background: url('../images/Daily_Double_Logo.png') no-repeat center center;
+                background-size: cover;
+                z-index: 2;
+                filter: none;
+                transition: filter 1s 3s;
+            }
+        }
+
+        [data-phase="dailyDouble"] & {
+            &:before {
+                filter: saturate(0.8) blur(21px);
+            }
+        }
+    }
+}
+
+
+
+#daily-double-wager {
+    position: absolute;
+    transition: opacity 2s 3.5s;
+    opacity: 0;
+    top: 0;
+    left: -100vw;
+    z-index: 10;
+    height: $board_height;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+
+    &-inner {
+        padding: 2rem;
+        text-align: center;
+        background: darkblue;
+    }
+
+    [data-phase="dailyDouble"] & {
+        opacity: 1;
+        left: 0%;
+    }
+
+    p {
+        font-size: 3rem;
+        margin: 0;
+    }
 }
 
 .active-lights {
@@ -360,7 +421,7 @@ html, body {
     background: #000;
     position: fixed;
     top: 0;
-    transition: margin 1s 1s;
+    transition: margin 0s;
     z-index: 10;
 
     &:before {
@@ -381,6 +442,7 @@ html, body {
 
     .show-lights & {
         margin: 0;
+        transition: margin 1s 1s;
     }
 
     .trigger-lights & {
@@ -453,5 +515,54 @@ html, body {
                 }
             }
         }
+    }
+}
+
+#final-jeopardy {
+    display: none;
+    width: 100vw;
+    height: $board_height;
+    background-size: cover;
+    background: darkblue;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+
+    &:before {
+        content: '';
+        position: absolute;
+        @include position;
+        opacity: 0;
+        background: url('../images/jeopardy-bg.jpg') no-repeat center center;
+        transition: opacity 1s;
+    }
+
+    [data-phase="finalJeopardy"] & {
+        &:before {
+            opacity: 1;
+        }
+    }
+
+    > div {
+        font-family: $prompt_font, Helvetica, Arial, sans-serif;
+        color: white;
+        font-size: clamp(min(5cqw, 5cqh), 4.22vw, min(10cqw, 10cqh));
+        text-transform: uppercase;
+        text-shadow: 4px 4px 8px black;
+    }
+}
+
+[data-phase="finalCategory"] #final-cat { display: block; }
+[data-phase="finalQuestion"] #final-question { display: block; }
+[data-phase="finalCountdown"] #final-question { display: block; }
+[data-phase="finalAnswer"] #final-cat { display: block; }
+[data-phase="finalScores"] #final-cat { display: block; }
+
+#jeopardy-container[data-phase*="final"] {
+    #final-jeopardy {
+        display: flex;
+    }
+    #game-grid {
+        display: none;
     }
 }

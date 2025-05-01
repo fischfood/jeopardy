@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
         selectedQuestion: null,
         activePlayer: null,
         controlPlayer: null,
+        currentWager: 0,
         playerScores: {
             player1: 0,
             player2: 0,
@@ -82,9 +83,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let player3 = ['Numpad9', 'Numpad0', 'NumpadMultiply', 'NumpadSubtract'];
 
     // Testing
-    player1 = ['Numpad9'];
-    player2 = ['Numpad0'];
-    player3 = ['NumpadMultiply'];
+    player1 = ['Numpad9', 'KeyD'];
+    player2 = ['Numpad0', 'KeyF'];
+    player3 = ['NumpadMultiply', 'KeyG'];
 
     const keyToPlayerMap = {
         player1,
@@ -114,6 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (event.code === "Space") {
             handleSpacebarPress();
+        }
+
+        if ( event.code === "Enter" ) {
+            handleEnterPress();
         }
 
         // Category / Question Select
@@ -155,21 +160,30 @@ document.addEventListener("DOMContentLoaded", () => {
             if ( event.code === "Slash" ) {
                 jLog( `${player} got ${thisQ} correct. Back to board`);
                 giveScore( player, thisQ );
-                finishQuestion( thisQ );
+
                 document.querySelector('.board-control').classList.remove('board-control');
                 setControl( player );
+
+                finishQuestion( thisQ );
             }
 
             // Wrong Answer
             if ( event.code === "KeyX" ) {
-                jLog( `${player} got ${thisQ} wrong. Continue`);
+
                 giveScore( player, thisQ, -1);
-                disablePlayer( player );
-                container.classList.remove('answer-lights');
-                setPhase('allowAnswer');
+
+                if ( document.getElementById('P' + thisQ ).hasAttribute('daily-double' ) ) {
+                    jLog( `${player} got the Daily Double wrong. Back out`);
+                    finishQuestion( thisQ );
+                } else {
+                    jLog( `${player} got ${thisQ} wrong. Continue`);                    
+                    disablePlayer( player );
+                    container.classList.remove('answer-lights');
+                    setPhase('allowAnswer');
+                }
             }
 
-            // Wrong Answer
+            // Timed Out
             if ( event.code === "KeyT" ) {
                 jLog( `${player} timed out.`);
                 document.getElementById("times-up").play();
@@ -190,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Spacebar triggers everything 
     function handleSpacebarPress() {
         if (gameState.boardPhase === 'start') {
-            startGame();
+            startRound();
         } else if (gameState.boardPhase === 'displayCategories') {
             displayCategories();
         } else if (gameState.boardPhase === 'slideCategories') {
@@ -200,10 +214,31 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if ( gameState.boardPhase === 'readingQuestion' ) {
             allowAnswer();
         }
+
+        // Final Jeopardy
+        if ( gameState.boardPhase === 'finalJeopardy' ) {
+            setPhase('finalCategory');
+        } else if ( gameState.boardPhase === 'finalCategory' ) {
+            setPhase('finalQuestion');
+        } else if ( gameState.boardPhase === 'finalQuestion' ) {
+            setPhase( 'finalCountdown' );
+            document.getElementById("final-countdown").play();
+        } else if ( gameState.boardPhase === 'finalCountdown' ) {
+            setPhase( 'finalAnswers' );
+        } else if ( gameState.boardPhase === 'finalAnswers' ) {
+            setPhase( 'finalScores' );
+        }
     }
 
-    function startGame() {
-        jLog("Game started");
+    // Enter Triggers Wagers
+    function handleEnterPress() {
+        if ( gameState.boardPhase === 'dailyDouble' ) {
+            displayDailyDouble();
+        }
+    }
+
+    function startRound() {
+        jLog("Round started");
         gameState.allowKeys = false;
         fillGameBoard( gameState.round );
     }
@@ -328,15 +363,68 @@ document.addEventListener("DOMContentLoaded", () => {
             jLog( "Loading cell " + cellId );
             let thisQ = document.getElementById('P' + cellId )
             thisQ.classList.add('active');
-            setPhase( "readingQuestion" );
-            jLog("Showing question, showing lights");
-            container.classList.add('show-lights');
+
+            if ( thisQ.hasAttribute("daily-double") ) {
+
+                startDailyDouble(cellId);
+
+            } else {
+                setPhase( "readingQuestion" );
+                jLog("Showing question, showing lights");
+                container.classList.add('show-lights');
+            }
         }
+    }
+
+    function startDailyDouble() {
+        setPhase( "dailyDouble" );
+        jLog("Showing DD, showing wager");
+        document.getElementById("daily-double").play();
+
+        // Assign Values
+        document.getElementById("dd-player").innerHTML = document.getElementById( gameState.activePlayer + '-name' ).innerHTML;
+        let [min, max] = ddMinMax();
+        document.getElementById("dd-min-max").innerHTML = (`$${min} - $${max}`);
+    }
+
+    function displayDailyDouble() {
+
+        let wager = document.getElementById('dd-wager').value
+        let [min, max] = ddMinMax();
+
+        if ( wager >= min && wager <= max ) {
+            // Allowed Wager
+            jLog(`Allowed Wager - ${wager}`);
+
+            setPhase( "awaitingAnswer" );
+            setAnsweringPlayer( gameState.activePlayer );
+            document.getElementById('dd-wager').value = 0;
+            document.getElementById( gameState.selectedQuestion ).setAttribute( 'data-score', wager );
+
+        } else {
+            // Not allowed, try again
+            jLog(`Select New Wager - ${wager}`);
+
+        }        
+    }
+
+    function ddMinMax() {
+        let player = gameState.activePlayer;
+        let score = gameState.playerScores[ player ];
+
+        let min = 5;
+        let max = gameState.round * 1000;
+
+        if ( score > max ) {
+            max = score;
+        }
+
+        return [min, max];
     }
 
     function allowAnswer() {
         setPhase( "allowAnswer" );
-        jLog( "Awaiting answer from players" );
+        jLog( "Awaiting answer from player" );
         container.classList.add('trigger-lights');
     }
 
@@ -402,6 +490,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function finishQuestion( cellId ) {
         gameState.answeredQuestions.push( cellId );
+        
+        localStorage.setItem(`round-${gameState.round}-scores`, gameState.playerScores );
+        localStorage.setItem(`round-${gameState.round}-order`, gameState.answeredQuestions );
+
         removeLockouts();
         removeDisabled();
         clearHighlights();
@@ -419,8 +511,59 @@ document.addEventListener("DOMContentLoaded", () => {
         jLog( `${30 - gameState.answeredQuestions.length} questions remain` );
 
         // @TODO: If 30 questions answered, end of round
+        if ( 2 - gameState.answeredQuestions.length === 0 ) {
+
+            jLog( `End of round ${gameState.round}`);
+            moveNextRound();
+        }
 
         // @TODO: If 15 questions answered, go to commercial
+    }
+
+    function moveNextRound() {
+
+        document.getElementById('bc-round-' + gameState.round ).classList.add('hidden');
+        let thisCats = document.querySelectorAll('.round-cat-' + gameState.round );
+        
+        thisCats.forEach((tCat) => {
+            tCat.classList.remove('visible');
+        });
+
+        gameState.round = gameState.round + 1;
+
+        if ( gameState.round <= gameState.maxRounds ) {
+
+            jLog( `Starting round ${gameState.round}`);
+
+            document.getElementById('bc-round-' + gameState.round ).classList.remove('hidden');
+            let nextCats = document.querySelectorAll('.round-cat-' + gameState.round );
+            nextCats.forEach((nCat) => {
+                nCat.classList.remove('visible');
+            });
+
+            setPhase( 'start' );
+
+            let lowestPlayer = Object.keys(gameState.playerScores).reduce((lowest, player) => {
+                return gameState.playerScores[player] < gameState.playerScores[lowest] ? player : lowest;
+            });
+
+            document.querySelector('.board-control').classList.remove('board-control');
+            setControl( lowestPlayer );
+
+            gameState.answeredQuestions = [];
+
+        } else {
+            jLog( 'Starting Final Jeopardy');
+
+            Object.entries(gameState.playerScores).forEach(([player, score]) => {
+                if (score <= 0) {
+                    disablePlayer(player);
+                    jLog(`${player} is ineligible for Final Jeopardy with $${score}`);
+                }
+            });
+
+            setPhase( 'finalJeopardy' );
+        }
     }
 
     function checkCategoryCompletion(column) {
@@ -453,6 +596,8 @@ document.addEventListener("DOMContentLoaded", () => {
         let score = qData.getAttribute('data-score');
         let currentScore = gameState.playerScores[ player ];
         let newScore = currentScore + ( score * val );
+
+        jLog( `${player}'s score has been adjusted by ${score * val}`)
 
         gameState.playerScores[ player ] = newScore;
         playerScore.innerHTML = newScore;

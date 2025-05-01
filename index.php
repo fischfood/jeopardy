@@ -61,6 +61,16 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
             </div>
         </div> <?php // End #game-grid ?>
 
+        <div id="final-jeopardy">
+            <div id="final-start"></div>
+            <?php foreach( $data['final'] as $key => $val ): ?>
+                <div id="final-<?php echo $key; ?>" class="hidden">
+                    <?php echo $val; ?>
+                </div>
+            <?php endforeach; ?>
+            <div id="final-scores hidden"></div>
+        </div>
+
         <div id="scoreboard">
             <?php foreach( $players as $k => $player ): ?>
                 <?php $key = $k + 1; ?>
@@ -68,7 +78,7 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
                     <div class="player-score">
                         $<span id="player<?php echo $key; ?>-score">0</span>
                     </div>
-                    <div class="player-name">
+                    <div class="player-name" id="player<?php echo $key;?>-name">
                         <?php echo $player; ?>
                     </div>
                 </div>
@@ -92,7 +102,7 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
                 <?php endforeach; ?>
             </div>
             <div id="categories-2" class="category-slider">
-                <?php foreach ($data['2']['cats'] as $cat): ?>
+                <?php foreach ($data['2']['cats'] as $k => $cat): ?>
                     <div class="category-full" id="<?php echo $cat; ?>">
                         <div id="cf-2-<?php echo $k+1; ?>" class="category-text"><?php echo $cat; ?></div>
                     </div>
@@ -106,14 +116,34 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
                 <div class="prompt-container" id="prompt-round-<?php echo $round; ?>">
                     <?php for ($row = 1; $row <= 5; $row++): ?>
                         <?php foreach ($categories as $col): ?>
-                            <div id="<?php echo 'P' . $col . $row . $round; ?>" class="prompt-cell col-<?php echo ord($col) - 65; ?> row-<?php echo $row; ?>">
+                            <?php $key = $col . $row . $round; ?>
+                            <?php $dd = ( array_key_exists( 'dd', $dataRound ) && in_array( $col . $row, $dataRound['dd'] ) ) ? 'daily-double="true"' : ''; ?>
+                            <div <?php echo $dd; ?> id="<?php echo 'P' . $key; ?>" class="prompt-cell col-<?php echo ord($col) - 65; ?> row-<?php echo $row; ?>">
                                 <?php $qaData = $dataRound['questions'][$col . $row]; ?>
-                                <div class="prompt-question">
+
+                                <?php $image = $image_class = ''; ?>
+
+                                <?php /* if ( file_exists( __DIR__ . '/images/' . $key . '.jpg' ) ) {
+                                    $image = 'images/' . $key . '.jpg';
+                                    $image_class = 'has-image';
+                                } elseif ( file_exists( __DIR__ . '/images/' . $key . '.png' ) ) {
+                                    $image = 'images/' . $key . '.png';
+                                    $image_class = 'has-image';
+                                } */ ?>
+
+                                <?php if ( array_key_exists( 'img', $qaData ) ) {
+                                    $image = 'images/prompts/' . $qaData['img'];
+                                    $image_class = 'has-image';
+                                } ?>
+
+                                <div class="prompt-question <?php echo $image_class; ?>" style="background-image: url( <?php echo $image; ?>);">
                                     <?php echo $qaData['question']; ?>
                                 </div>
+
                                 <div class="prompt-answer">
                                     <?php echo $qaData['answer']; ?>
                                 </div>
+
                             </div>
                         <?php endforeach; ?>
                     <?php endfor; ?>
@@ -134,6 +164,14 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
                 <?php endforeach; ?>
             </div>
         <?php endforeach; ?>
+
+        <div id="daily-double-wager">
+            <div id="daily-double-wager-inner">
+                <p id="dd-player">NAME</p>
+                <p id="dd-min-max">$5 - <?php echo $baseScore * 5; ?></p>
+                <input id="dd-wager" type="number" min="5" max="<?php echo $baseScore * 5; ?>" />
+            </div>
+        </div>
 
     </div> <?php // End #jeopardy-container ?>
 
