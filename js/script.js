@@ -519,10 +519,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function finishQuestion( cellId ) {
-        gameState.answeredQuestions.push( cellId );
+        gameState.answeredQuestions.push(cellId);
+
+        let roundKey = `round-${gameState.round}`;
+        localStorage.setItem(`${roundKey}-scores`, JSON.stringify(gameState.playerScores));
+        localStorage.setItem(`${roundKey}-answered`, JSON.stringify(gameState.answeredQuestions));
         
-        localStorage.setItem(`round-${gameState.round}-scores`, gameState.playerScores );
-        localStorage.setItem(`round-${gameState.round}-order`, gameState.answeredQuestions );
 
         removeLockouts();
         removeDisabled();
@@ -541,7 +543,7 @@ document.addEventListener("DOMContentLoaded", () => {
         jLog( `${30 - gameState.answeredQuestions.length} questions remain` );
 
         // @TODO: If 30 questions answered, end of round
-        if ( 2 - gameState.answeredQuestions.length === 0 ) {
+        if ( 30 - gameState.answeredQuestions.length === 0 ) {
 
             jLog( `End of round ${gameState.round}`);
             moveNextRound();
@@ -701,4 +703,81 @@ document.addEventListener("DOMContentLoaded", () => {
         setPhase('finalScores');
         jLog('Final scores ready');
     }
+
+    // Restarting
+    function checkLocalStorageOnLoad() {
+        for (let round = 1; round <= gameState.maxRounds; round++) {
+            if (localStorage.getItem(`round-${round}-scores`) || localStorage.getItem(`round-${round}-answered`)) {
+                const resume = confirm("Resume saved game?");
+                if (resume) {
+                    loadGameFromLocalStorage();
+                } else {
+                    clearLocalStorageData();
+                }
+                break;
+            }
+        }
+    }
+
+    function loadGameFromLocalStorage() {
+        const savedRound = localStorage.getItem("saved-round") || "1";
+        const scoresKey = `round-${savedRound}-scores`;
+        const answeredKey = `round-${savedRound}-answered`;
+    
+        const savedScores = localStorage.getItem(scoresKey);
+        const savedAnswered = localStorage.getItem(answeredKey);
+    
+        if (!savedScores || !savedAnswered) {
+            jLog("No saved game found in localStorage.");
+            return;
+        }
+    
+        gameState.round = parseInt(savedRound);
+        const scores = JSON.parse(savedScores);
+        const answered = JSON.parse(savedAnswered);
+    
+        // Restore scores
+        for (let player in scores) {
+            gameState.playerScores[player] = scores[player];
+            const scoreEl = document.getElementById(`${player}-score`);
+            if (scoreEl) {
+                scoreEl.innerText = scores[player];
+            }
+            const podium = document.getElementById(player);
+            if (podium) {
+                if (scores[player] < 0) {
+                    podium.classList.add('negative');
+                } else {
+                    podium.classList.remove('negative');
+                }
+            }
+        }
+    
+        gameState.answeredQuestions = answered;
+    
+        // Fill the board first
+        gameState.allowKeys = false;
+        fillGameBoard(gameState.round);
+    
+        setTimeout(() => {
+            answered.forEach(cellId => {
+                const cell = document.getElementById(cellId);
+                if (cell) {
+                    cell.classList.add("answered");
+                }
+            });
+            gameState.allowKeys = true;
+            setPhase("roundRunning");
+            jLog(`Resumed Round ${gameState.round}`);
+        }, 6 * transitionTime + 100);
+    }
+
+    function clearLocalStorageData() {
+        for (let round = 1; round <= gameState.maxRounds; round++) {
+            localStorage.removeItem(`round-${round}-scores`);
+            localStorage.removeItem(`round-${round}-answered`);
+        }
+    }
+    
+    checkLocalStorageOnLoad();
 });
