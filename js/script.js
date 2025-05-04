@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
         selectedCategory: null,
         selectedQuestion: null,
         activePlayer: null,
-        controlPlayer: null,
         currentWager: 0,
         playerScores: {
             player1: 0,
@@ -524,6 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let roundKey = `round-${gameState.round}`;
         localStorage.setItem(`${roundKey}-scores`, JSON.stringify(gameState.playerScores));
         localStorage.setItem(`${roundKey}-answered`, JSON.stringify(gameState.answeredQuestions));
+        localStorage.setItem(`round-${gameState.round}-control`, gameState.activePlayer);
         
 
         removeLockouts();
@@ -704,6 +704,35 @@ document.addEventListener("DOMContentLoaded", () => {
         jLog('Final scores ready');
     }
 
+    // Editing Scores
+    players.forEach(player => {
+        const scoreEl = document.getElementById(`${player}-score`);
+        if (scoreEl) {
+            scoreEl.addEventListener("click", () => {
+                const currentScore = gameState.playerScores[player];
+                const newScore = prompt(`Enter new score for ${document.getElementById(`${player}-name`).innerText}`, currentScore);
+                if (newScore !== null && !isNaN(newScore)) {
+                    const parsed = parseInt(newScore);
+                    gameState.playerScores[player] = parsed;
+                    scoreEl.innerText = parsed;
+    
+                    const podium = document.getElementById(player);
+                    if (podium) {
+                        if (parsed < 0) {
+                            podium.classList.add('negative');
+                        } else {
+                            podium.classList.remove('negative');
+                        }
+                    }
+    
+                    // Update localStorage for current round
+                    localStorage.setItem(`round-${gameState.round}-scores`, JSON.stringify(gameState.playerScores));
+                    jLog(`Updated ${player} score to ${parsed}`);
+                }
+            });
+        }
+    });
+
     // Restarting
     function checkLocalStorageOnLoad() {
         for (let round = 1; round <= gameState.maxRounds; round++) {
@@ -770,6 +799,13 @@ document.addEventListener("DOMContentLoaded", () => {
             setPhase("roundRunning");
             jLog(`Resumed Round ${gameState.round}`);
         }, 6 * transitionTime + 100);
+
+        const savedControl = localStorage.getItem(`round-${savedRound}-control`);
+        if (savedControl) {
+            gameState.activePlayer = savedControl;
+            setControl(savedControl);
+            jLog(`Board control restored to ${savedControl}`);
+        }
     }
 
     function clearLocalStorageData() {
