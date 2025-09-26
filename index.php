@@ -90,7 +90,7 @@ $maybeTesting = isset( $_GET['test'] ) ? 'jTest' : '';
                     <div class="player-score">
                         $<span id="player<?php echo $key; ?>-score">0</span>
                     </div>
-                    <div class="player-name" id="player<?php echo $key;?>-name">
+                    <div class="player-name" id="player<?php echo $key;?>-name" style="background-image: url( 'images/JeopardyNameplates_Wide-0<?php echo $key; ?>.png' )">
                         <?php echo $player; ?>
                     </div>
                 </div>
