@@ -94,9 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let player3 = ['Numpad9', 'Numpad0', 'NumpadMultiply', 'NumpadSubtract'];
 
     // Testing
-    player1 = ['Numpad9', 'KeyD'];
-    player2 = ['Numpad0', 'KeyF'];
-    player3 = ['NumpadMultiply', 'KeyG'];
+    // player1 = ['Numpad9', 'KeyD'];
+    // player2 = ['Numpad0', 'KeyF'];
+    // player3 = ['NumpadMultiply', 'KeyG'];
 
     const keyToPlayerMap = {
         player1,
@@ -106,7 +106,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener("keydown", (event) => {
 
+        if (event.code === "KeyP") {
+            container.classList.toggle("commercial");
+            jLog("Toggled commercial mode");
+        }
+
         let matchedPlayer = null;
+
+        if ( gameState.boardPhase === "start" ) {
+            for (const [player, keys] of Object.entries(keyToPlayerMap)) {
+                if (keys.includes(event.code)) {
+                    matchedPlayer = player;
+                    testBuzzerPress( player );
+                }
+            }
+        }
 
         // Allow Player Answer or Lockout90*-
         if ( gameState.boardPhase === "readingQuestion" || gameState.boardPhase === "allowAnswer" || gameState.boardPhase === "checkingAnswer" ) {
@@ -457,6 +471,18 @@ document.addEventListener("DOMContentLoaded", () => {
         container.classList.add('trigger-lights');
     }
 
+    function testBuzzerPress( player ) {
+        let $player = document.getElementById( player );
+
+        if ( ! $player.classList.contains('testing') ) {
+            $player.classList.add('testing');
+            jLog( `${player} testing buzzer`);
+            setTimeout(() => {
+                $player.classList.remove('testing');
+            }, 50 );
+        }
+    }
+
     function handleBuzzerPress( player ) {
         // Lock out if too early
         if ( gameState.boardPhase === "readingQuestion" ) {
@@ -524,6 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem(`${roundKey}-scores`, JSON.stringify(gameState.playerScores));
         localStorage.setItem(`${roundKey}-answered`, JSON.stringify(gameState.answeredQuestions));
         localStorage.setItem(`round-${gameState.round}-control`, gameState.activePlayer);
+        localStorage.setItem('saved-round', gameState.round );
         
 
         removeLockouts();
@@ -764,6 +791,18 @@ document.addEventListener("DOMContentLoaded", () => {
         gameState.round = parseInt(savedRound);
         const scores = JSON.parse(savedScores);
         const answered = JSON.parse(savedAnswered);
+
+        let boxes = document.querySelectorAll(".round-cat-" + gameState.round);
+        boxes.forEach(box => {
+            box.classList.add("visible");
+        });
+
+        // Hide All
+        document.getElementById('bc-round-1' ).classList.add('hidden');
+        document.getElementById('bc-round-2' ).classList.add('hidden');
+
+        // Show This
+        document.getElementById('bc-round-' + gameState.round ).classList.remove('hidden');
     
         // Restore scores
         for (let player in scores) {

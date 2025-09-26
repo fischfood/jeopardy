@@ -1,4 +1,4 @@
-$score_height: 120px;
+$score_height: 150px;
 $board_height: calc( 100vh - $score_height );
 
 $questionDisplay: .875s;
@@ -195,10 +195,23 @@ html, body {
         align-items: center;
         background: darkblue;
         color: white;
+        outline: 2px solid #000;
+        outline-offset: -2px;
 
         .player-score {
-            border-top: 9px solid #bbb;
+            // border-top: 9px solid #bbb;
             width: 80%;
+        }
+
+        .player-name {
+            background-size: contain;
+            background-position: center center;
+            background-repeat: no-repeat;
+            color: transparent;
+            width: 100%;
+            flex: 1 1 100%;
+            flex: 0 0 80px;
+            margin-bottom: 20px;
         }
 
         &.active {
@@ -215,12 +228,16 @@ html, body {
             background: darkred;
         }
 
+        &.testing {
+            background: teal;
+        }
+
         &.disabled {
             background: gray;
         }
 
         &.answering {
-            background: cyan;
+            background: blue;
         }
 
         [data-phase="roundRunning"] &, [data-phase="dailyDouble"] & {
@@ -665,6 +682,11 @@ html, body {
     }
 }
 
+#final-question {
+    padding: 2rem;
+    text-align: center;
+}
+
 [data-phase="finalCategory"] #final-cat { display: block; }
 [data-phase="finalQuestion"] #final-question { display: block; }
 [data-phase="finalCountdown"] #final-question { display: block; }
@@ -691,5 +713,16 @@ html, body {
     }
     #game-grid {
         display: none;
+    }
+}
+
+#jeopardy-container.commercial {
+    .game-cell {
+        background-color: transparent;
+        color: transparent;
+        text-shadow: none;
+    }
+    .round-cat-name {
+        opacity: 0;
     }
 }
